@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShopVoice | Agent Command Center</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-base: #020617;
+            --glass-bg: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --accent-glow: rgba(56, 189, 248, 0.15);
+            
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #3b82f6;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-base);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 2rem;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Ambient Glow Background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -20%; left: -10%;
+            width: 50vw; height: 50vh;
+            background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+            z-index: -1;
+            filter: blur(80px);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding: 1.5rem 2rem;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            background: linear-gradient(to right, #38bdf8, #818cf8);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .status-cluster {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .live-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        
+        .pulse {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            background-color: var(--success);
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+            animation: pulse-dot 1.5s infinite;
+        }
+
+        @keyframes pulse-dot {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        /* Soundwave Visualizer */
+        .soundwave {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+            height: 20px;
+            margin-right: 15px;
+            border-right: 1px solid var(--glass-border);
+            padding-right: 20px;
+        }
+        .soundwave span {
+            display: block;
+            width: 3px;
+            background-color: #38bdf8;
+            border-radius: 2px;
+            animation: wave 1s ease-in-out infinite;
+        }
+        .soundwave span:nth-child(1) { height: 8px; animation-delay: 0s; }
+        .soundwave span:nth-child(2) { height: 16px; animation-delay: 0.15s; }
+        .soundwave span:nth-child(3) { height: 10px; animation-delay: 0.3s; }
+        .soundwave span:nth-child(4) { height: 14px; animation-delay: 0.45s; }
+        .soundwave-label {
+            font-size: 0.75rem;
+            color: #38bdf8;
+            font-weight: 600;
+            margin-right: 8px;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        @keyframes wave {
+            0%, 100% { transform: scaleY(0.4); opacity: 0.6; }
+            50% { transform: scaleY(1); opacity: 1; box-shadow: 0 0 10px rgba(56,189,248,0.5); }
+        }
+
+        /* Widgets Section */
+        .widgets-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .widget {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            backdrop-filter: blur(12px);
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+        }
+        .widget.clickable { cursor: pointer; }
+        .widget.active-filter {
+            border-color: #60a5fa;
+            background: rgba(96, 165, 250, 0.05);
+            box-shadow: 0 12px 40px rgba(96, 165, 250, 0.2);
+            transform: translateY(-2px);
+        }
+        .widget:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+            border-color: rgba(255,255,255,0.15);
+        }
+        .widget-title {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+        }
+        .widget-value {
+            font-size: 2.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        /* Table Container */
+        .dashboard-container {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            backdrop-filter: blur(12px);
+            padding: 1px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+        }
+
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th {
+            background-color: rgba(0,0,0,0.2);
+            padding: 1.25rem 1.5rem;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            font-weight: 600;
+            border-bottom: 1px solid var(--glass-border);
+        }
+        td {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid rgba(255,255,255,0.02);
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            transition: background 0.2s ease, transform 0.2s;
+            vertical-align: middle;
+        }
+
+        tbody tr:hover td {
+            background-color: rgba(255, 255, 255, 0.03);
+            cursor: default;
+        }
+        
+        tbody tr.flash-update td {
+            animation: flash-row 2s ease-out;
+        }
+        
+        @keyframes flash-row {
+            0% { background-color: rgba(56, 189, 248, 0.25); transform: scale(1.01); }
+            100% { background-color: transparent; transform: scale(1); }
+        }
+
+        .order-id { font-family: monospace; font-weight: 600; color: #e2e8f0; }
+
+        /* Customer Cell with Avatar */
+        .customer-cell {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 500;
+        }
+        .avatar {
+            width: 34px; height: 34px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: white;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+            flex-shrink: 0;
+        }
+        
+        /* Badges */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: capitalize;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .badge.delivered { background: rgba(16, 185, 129, 0.15); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.3); }
+        .badge.processing, .badge.shipped { background: rgba(245, 158, 11, 0.15); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.3); }
+        .badge.cancelled { background: rgba(239, 68, 68, 0.15); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.3); }
+        
+        .badge.refund-approved { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.4); margin-top: 6px; }
+        .badge.refund-pending { background: rgba(245, 158, 11, 0.2); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.4); margin-top: 6px; }
+        .badge.refund-rejected { background: rgba(239, 68, 68, 0.2); color: var(--danger); border: 1px solid rgba(239, 68, 68, 0.4); margin-top: 6px; }
+
+        .price { font-weight: 600; font-family: monospace; font-size: 1rem; }
+        .date { color: var(--text-secondary); font-size: 0.85rem; }
+        .flex-col { display: flex; flex-direction: column; gap: 4px; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+            ShopVoice Command Center
+        </h1>
+        <div class="status-cluster">
+            <span class="soundwave-label">Agent Listening</span>
+            <div class="soundwave">
+                <span></span><span></span><span></span><span></span>
+            </div>
+            <div class="live-indicator">
+                <div class="pulse"></div>
+                Live Database Sync
+            </div>
+        </div>
+    </div>
+
+    <!-- Analytics Widgets -->
+    <div class="widgets-container">
+        <div class="widget">
+            <div class="widget-title">Total Processed Orders</div>
+            <div class="widget-value" id="wdg-orders">0</div>
+        </div>
+        <div class="widget clickable" id="widget-refunds" onclick="toggleRefundFilter()">
+            <div class="widget-title">Active AI Refunds <span style="font-size:0.8em; opacity:0.5; text-transform:lowercase; font-weight:400;">(click to filter)</span></div>
+            <div class="widget-value" id="wdg-refunds" style="color: #60a5fa;">0</div>
+        </div>
+        <div class="widget">
+            <div class="widget-title">Net Revenue Delivered</div>
+            <div class="widget-value" id="wdg-revenue" style="color: #10b981;">₹0</div>
+        </div>
+    </div>
+
+    <!-- Data Table -->
+    <div class="dashboard-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Order ID</th>
+                    <th>Customer</th>
+                    <th>Date</th>
+                    <th>Address</th>
+                    <th>Product</th>
+                    <th>Status</th>
+                    <th>Total Value</th>
+                </tr>
+            </thead>
+            <tbody id="orders-body">
+                <!-- Data populated by JS -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        let previousDataString = "";
+        let lastFetchedOrders = [];
+        let showingOnlyRefunds = false;
+
+        function toggleRefundFilter() {
+            showingOnlyRefunds = !showingOnlyRefunds;
+            const widget = document.getElementById('widget-refunds');
+            if (showingOnlyRefunds) {
+                widget.classList.add('active-filter');
+            } else {
+                widget.classList.remove('active-filter');
+            }
+            renderTable(lastFetchedOrders, false);
+        }
+
+        // UI Helpers
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
+        }
+
+        function formatDate(dateStr) {
+            const d = new Date(dateStr);
+            return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) + 
+                   " • " + d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function getInitials(name) {
+            return name.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
+        }
+
+        function getColorForName(name) {
+            const colors = [
+                'linear-gradient(135deg, #f87171, #f43f5e)', // Red/Rose
+                'linear-gradient(135deg, #fbbf24, #d97706)', // Amber
+                'linear-gradient(135deg, #34d399, #059669)', // Emerald
+                'linear-gradient(135deg, #60a5fa, #2563eb)', // Blue
+                'linear-gradient(135deg, #a78bfa, #7c3aed)', // Purple
+                'linear-gradient(135deg, #f472b6, #db2777)'  // Pink
+            ];
+            let hash = 0;
+            for (let i = 0; i < name.length; i++) {
+                hash = name.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            return colors[Math.abs(hash) % colors.length];
+        }
+
+        function createBadge(status, type="order") {
+            const s = status.toLowerCase();
+            let colorClass = "processing";
+            if (s === "delivered" || s === "approved") colorClass = "delivered";
+            if (s === "cancelled" || s === "rejected") colorClass = "cancelled";
+            
+            if(type === "refund") {
+                return `<span class="badge refund-${s}">Refund: ${status}</span>`;
+            }
+            return `<span class="badge ${colorClass}">${status}</span>`;
+        }
+
+        // Dashboard Logic
+        function updateWidgets(orders) {
+            let totalRevenue = 0;
+            let activeRefunds = 0;
+
+            orders.forEach(order => {
+                if (order.status.toLowerCase() === 'delivered') {
+                    totalRevenue += order.total_inr;
+                }
+                if (order.refund_info && order.refund_info.status.toLowerCase() !== 'rejected') {
+                    activeRefunds++;
+                }
+            });
+
+            document.getElementById('wdg-orders').innerText = orders.length;
+            document.getElementById('wdg-refunds').innerText = activeRefunds;
+            document.getElementById('wdg-revenue').innerText = formatCurrency(totalRevenue);
+        }
+
+        function renderTable(orders, isUpdate) {
+            const tbody = document.getElementById('orders-body');
+            tbody.innerHTML = '';
+
+            let displayOrders = orders;
+            if (showingOnlyRefunds) {
+                // Filter to show only active refunds
+                displayOrders = orders.filter(o => o.refund_info && o.refund_info.status.toLowerCase() !== 'rejected');
+            }
+
+            if (displayOrders.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 3rem; color: #94a3b8; font-size: 1.1rem;">No active refunds found in the database.</td></tr>`;
+                return;
+            }
+
+            displayOrders.forEach(order => {
+                const tr = document.createElement('tr');
+                if (isUpdate) tr.classList.add('flash-update'); // Animation trigger
+                
+                let statusHTML = createBadge(order.status);
+                if (order.refund_info) {
+                    statusHTML += '<br>' + createBadge(order.refund_info.status, "refund");
+                    statusHTML += `<div style="font-size: 0.75rem; color: #94a3b8; margin-top: 6px; max-width: 170px; line-height: 1.3;"><i>Reason: ${order.refund_info.reason}</i></div>`;
+                }
+
+                const initials = getInitials(order.customer_name);
+                const avatarBg = getColorForName(order.customer_name);
+
+                tr.innerHTML = `
+                    <td class="order-id">${order.order_id}</td>
+                    <td>
+                        <div class="customer-cell">
+                            <div class="avatar" style="background: ${avatarBg};">${initials}</div>
+                            ${order.customer_name}
+                        </div>
+                    </td>
+                    <td class="date flex-col">
+                        <span>Ordered: ${formatDate(order.ordered_at)}</span>
+                    </td>
+                    <td style="font-size: 0.85rem; color: #bac0c7; max-width: 250px; line-height: 1.4;">
+                        ${order.delivery_addr || 'No Address Provided'}
+                    </td>
+                    <td style="font-weight: 500; color: #e2e8f0; max-width: 200px;">${order.product_name || 'Various Items'}</td>
+                    <td>${statusHTML}</td>
+                    <td class="price">${formatCurrency(order.total_inr)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Data Fetching API
+        async function fetchOrders() {
+            try {
+                const response = await fetch('/api/orders');
+                const data = await response.json();
+                
+                if (data.orders) {
+                    lastFetchedOrders = data.orders;
+                    const currentDataString = JSON.stringify(data.orders);
+                    
+                    // Only re-render if data has changed to prevent animation flickering
+                    if (currentDataString !== previousDataString) {
+                        updateWidgets(data.orders);
+                        renderTable(data.orders, previousDataString !== "");
+                        previousDataString = currentDataString;
+                    }
+                }
+            } catch (error) {
+                console.error("Error fetching orders:", error);
+            }
+        }
+
+        // Boot
+        fetchOrders();
+        setInterval(fetchOrders, 2000);
+    </script>
+</body>
+</html>

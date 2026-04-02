@@ -9,7 +9,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
 
 from tools.order_tools  import get_order_details, check_return_eligibility, get_refund_status
 from tools.policy_tools import search_policy
-from tools.record_tools import approve_refund, reject_refund, cancel_order, log_escalation
+from tools.record_tools import approve_refund, reject_refund, cancel_order, log_escalation, create_new_order
 from agent.decision_rules import (
     can_auto_approve_refund,
     is_within_return_window,
@@ -24,7 +24,7 @@ client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 def gemini_reply(prompt: str) -> str:
     """Send a prompt to Gemini and return the text reply."""
     response = client.models.generate_content(
-        model="gemini-1.5-flash",
+        model="gemini-2.5-flash",
         contents=prompt
     )
     return response.text.strip()
@@ -44,6 +44,7 @@ Classify the customer message into exactly one of these intents:
 - order_query       (asking about order status, location, delivery)
 - refund_request    (wants money back)
 - cancel_order      (wants to cancel an order)
+- place_order       (wants to buy a new product, or order something)
 - damaged_item      (received broken or defective product)
 - wrong_item        (received wrong product)
 - exchange_request  (wants to swap for different size or colour)
@@ -58,7 +59,7 @@ Reply with only the intent label, nothing else.
 
     # Fallback to keyword classifier if Gemini returns unexpected value
     valid_intents = [
-        "order_query", "refund_request", "cancel_order",
+        "order_query", "refund_request", "cancel_order", "place_order",
         "damaged_item", "wrong_item", "exchange_request",
         "policy_query", "general_query"
     ]
@@ -72,26 +73,46 @@ Reply with only the intent label, nothing else.
 
 def extract_order_id(state: dict) -> dict:
     """
-    Node 2 — Extract order ID from the customer message using Gemini.
+    Node 2 — Extract order ID or Product ID from the customer message depending on intent.
     """
     message = state["user_message"]
+    intent = state.get("intent", "")
 
-    prompt = f"""
+    if intent == "place_order":
+        prompt = f"""
+Extract the Product ID from this customer message.
+Product IDs follow the pattern: P followed by 3 digits (example: P001, P015).
+
+Customer message: "{message}"
+
+If you find a product ID, reply with just the product ID (e.g. P001).
+If no product ID is found, reply with: NONE
+"""
+        product_id = gemini_reply(prompt).strip().upper()
+        if product_id == "NONE" or not product_id.startswith("P"):
+            product_id = None
+            
+        print(f"[Node] Product ID extracted: {product_id}")
+        state["product_id"] = product_id
+        state["order_id"] = None
+    else:
+        prompt = f"""
 Extract the order ID from this customer message.
-Order IDs follow the pattern: ORD followed by 4 digits (example: ORD1001, ORD1007).
+Order IDs follow the pattern: ORD followed by numbers (example: ORD1001, ORD1007).
 
 Customer message: "{message}"
 
 If you find an order ID, reply with just the order ID (e.g. ORD1001).
 If no order ID is found, reply with: NONE
 """
-    order_id = gemini_reply(prompt).strip().upper()
+        order_id = gemini_reply(prompt).strip().upper()
+        if order_id == "NONE" or not order_id.startswith("ORD"):
+            order_id = None
 
-    if order_id == "NONE" or not order_id.startswith("ORD"):
-        order_id = None
-
-    print(f"[Node] Order ID extracted: {order_id}")
-    state["order_id"] = order_id
+        print(f"[Node] Order ID extracted: {order_id}")
+        state["order_id"] = order_id
+        state["product_id"] = None
+        
     return state
 
 
@@ -180,6 +201,9 @@ def make_decision(state: dict) -> dict:
     elif intent == "cancel_order":
         state["action"] = "cancel_order"
 
+    elif intent == "place_order":
+        state["action"] = "create_order"
+
     elif intent in ("policy_query", "exchange_request", "order_query"):
         state["action"] = "provide_info"
 
@@ -209,6 +233,15 @@ def execute_action(state: dict) -> dict:
     elif action == "cancel_order" and order_id:
         result = cancel_order(order_id)
         state["action_result"] = result
+
+    elif action == "create_order":
+        prod_id = state.get("product_id")
+        if prod_id:
+            # We assume user C001 (Ravi Kumar) is dynamically logged in to Voice systems for the demo
+            result = create_new_order("C001", prod_id)
+            state["action_result"] = result
+        else:
+            state["action_result"] = {"success": False, "message": "Failed to place order. No valid Product ID found."}
 
     elif action == "escalate" and order_id:
         customer_id = (state.get("order_data") or {}).get("customer_id", "unknown")
@@ -271,6 +304,7 @@ Generate a helpful, spoken response to the customer. Be empathetic and clear.
 If a refund was approved, confirm the amount and timeline.
 If escalated, reassure them and give a clear timeline.
 If rejected, explain why politely and offer alternatives if any.
+If a new order was placed successfully, enthusiastically confirm their new order ID and total amount!
 Keep the response under 60 words.
 """
 

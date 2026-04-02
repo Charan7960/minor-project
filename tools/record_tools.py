@@ -165,6 +165,34 @@ def log_escalation(order_id: str, reason: str, customer_id: str) -> dict:
     finally:
         conn.close()
 
+def create_new_order(customer_id: str, product_id: str) -> dict:
+    """Creates a new order organically when the customer requests one via voice."""
+    conn = get_connection()
+    try:
+        product = conn.execute("SELECT name, price_inr FROM products WHERE product_id = ?", (product_id,)).fetchone()
+        if not product:
+            return {"success": False, "message": f"Product {product_id} not found. Please try another product."}
+            
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        unique_num = datetime.now().strftime("%y%m%H%M%S")
+        new_order_id = f"ORD{unique_num}"
+        
+        conn.execute("""
+            INSERT INTO orders (order_id, customer_id, status, total_inr, ordered_at, product_name)
+            VALUES (?, ?, 'processing', ?, ?, ?)
+        """, (new_order_id, customer_id, product["price_inr"], now, product["name"]))
+        
+        conn.commit()
+        return {
+            "success": True, 
+            "order_id": new_order_id, 
+            "amount_inr": product["price_inr"], 
+            "product_name": product["name"], 
+            "message": f"Perfect! New order created for {product['name']}."
+        }
+    finally:
+        conn.close()
+
 
 if __name__ == "__main__":
     print("=== Testing record_tools.py ===\n")

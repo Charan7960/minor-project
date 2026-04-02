@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShopVoice | Premium E-Commerce</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --card-bg: #ffffff;
+            --primary: #4f46e5;
+            --primary-glow: rgba(79, 70, 229, 0.4);
+            --secondary: #ec4899;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            overflow-x: hidden;
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0; width: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            padding: 1rem 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-links { display: flex; gap: 2rem; font-weight: 500; }
+        .nav-links a { text-decoration: none; color: var(--text-main); transition: color 0.2s; }
+        .nav-links a:hover { color: var(--primary); }
+
+        /* Hero Banner */
+        .hero {
+            margin-top: 80px;
+            padding: 6rem 5%;
+            text-align: center;
+            background: radial-gradient(circle at center, #ffffff 0%, var(--bg-color) 100%);
+            position: relative;
+        }
+        
+        .hero::after {
+            content: '';
+            position: absolute;
+            top: -50%; left: 50%;
+            width: 800px; height: 800px;
+            transform: translateX(-50%);
+            background: radial-gradient(circle, rgba(79,70,229,0.05) 0%, transparent 60%);
+            z-index: -1;
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            line-height: 1.2;
+            margin-bottom: 1.5rem;
+        }
+
+        .ai-banner {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            background: linear-gradient(135deg, #1e1b4b, var(--primary));
+            padding: 2rem 4rem;
+            border-radius: 24px;
+            color: white;
+            box-shadow: 0 20px 40px var(--primary-glow);
+            animation: float 4s ease-in-out infinite;
+            border: 1px solid rgba(255,255,255,0.2);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .ai-banner::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 50%; height: 100%;
+            background: linear-gradient(to right, transparent, rgba(255,255,255,0.2), transparent);
+            animation: shine 4s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        @keyframes shine {
+            0% { left: -100%; }
+            20% { left: 200%; }
+            100% { left: 200%; }
+        }
+
+        .ai-title { font-size: 1.2rem; font-weight: 500; margin-bottom: 0.5rem; opacity: 0.9; }
+        .ai-number { 
+            font-size: 3rem; 
+            font-weight: 800; 
+            letter-spacing: 2px;
+            text-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .ai-subtitle { font-size: 0.9rem; margin-top: 1rem; opacity: 0.8; }
+
+        /* Product Grid */
+        .products-section {
+            padding: 4rem 5%;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 2rem;
+        }
+
+        .product-card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .product-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+            border-color: var(--primary);
+        }
+
+        .category-tag {
+            position: absolute;
+            top: 1rem; right: 1rem;
+            background: var(--bg-color);
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--primary);
+            text-transform: uppercase;
+        }
+
+        .product-image-mock {
+            width: 100%;
+            height: 180px;
+            background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            font-size: 2rem;
+        }
+
+        .product-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            color: var(--text-main);
+        }
+
+        .product-price {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin-top: auto;
+        }
+
+        .buy-btn {
+            margin-top: 1rem;
+            width: 100%;
+            padding: 0.8rem;
+            border: none;
+            border-radius: 10px;
+            background: var(--text-main);
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-family: inherit;
+        }
+
+        .buy-btn:hover { background: var(--primary); }
+
+    </style>
+</head>
+<body>
+
+    <nav>
+        <div class="logo">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+            ShopVoice
+        </div>
+        <div class="nav-links">
+            <a href="#">Electronics</a>
+            <a href="#">Clothing</a>
+            <a href="#">Lifestyle</a>
+            <a href="#">Orders</a>
+        </div>
+    </nav>
+
+    <div class="hero">
+        <h1>Welcome to Next-Gen Shopping</h1>
+        
+        <div class="ai-banner">
+            <div class="ai-title">24/7 Intelligent Voice Support</div>
+            <div class="ai-number" id="phone-display">Loading...</div>
+            <div class="ai-subtitle">Call now to track, return, or cancel an order instantly.</div>
+        </div>
+    </div>
+
+    <div class="products-section">
+        <h2 class="section-title">New Arrivals</h2>
+        <div class="grid" id="product-grid">
+            <!-- Loaded via JS -->
+        </div>
+    </div>
+
+    <script>
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
+        }
+
+        function getEmojiForCategory(cat) {
+            const map = {
+                'Electronics': '💻',
+                'Clothing': '👕',
+                'Footwear': '👟',
+                'Lifestyle': '🪴',
+                'Fitness': '🏋️',
+                'Beauty': '✨',
+                'Accessories': '🎒',
+                'Furniture': '🪑'
+            };
+            return map[cat] || '📦';
+        }
+
+        async function fetchStoreData() {
+            try {
+                const res = await fetch('/api/products');
+                const data = await res.json();
+
+                // Update Phone
+                document.getElementById('phone-display').innerText = data.phone;
+
+                // Render Grid
+                const grid = document.getElementById('product-grid');
+                grid.innerHTML = '';
+
+                data.products.forEach(p => {
+                    const card = document.createElement('div');
+                    card.className = 'product-card';
+                    card.innerHTML = `
+                        <div class="category-tag">${p.category}</div>
+                        <div class="product-image-mock">${getEmojiForCategory(p.category)}</div>
+                        <div class="product-title">${p.name}</div>
+                        <div style="font-size: 0.8rem; color: #64748b; font-family: monospace; font-weight: 700;">ID: ${p.product_id}</div>
+                        <div class="product-price" style="margin-top: 0.5rem;">${formatCurrency(p.price_inr)}</div>
+                        <button class="buy-btn">Add to Cart</button>
+                    `;
+                    grid.appendChild(card);
+                });
+
+            } catch(e) {
+                console.error("Failed to load store data.");
+            }
+        }
+
+        fetchStoreData();
+    </script>
+</body>
+</html>
